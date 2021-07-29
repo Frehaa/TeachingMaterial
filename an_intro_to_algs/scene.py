@@ -1,56 +1,131 @@
 from manim import *
+import math
 # config.background_color = WHITE
 config.tex_template = TexTemplateLibrary.simple
 
+class TestingABC(Rectangle):
+    def __init__(
+            self, 
+            height=2, 
+            width=4, 
+            grid_xstep=None, 
+            color = '#FFFFFF', 
+            **kwargs
+    ):
+        super().__init__(color=color, height=height, width=width, grid_xstep=grid_xstep, **kwargs)
+
+    def pointwise_become_partial(self, vmobject, a, b):
+        print(a, b)
+        self.set_points([[0,0,0], [0,0,0]])
+
+class MyAnimation(Animation):
+    def __init__(self, mobject, **kwargs):
+        super().__init__(mobject, **kwargs)
+
+
+    def interpolate_mobject(self, alpha):
+        print(alpha)
+        if alpha < 0.2:
+            self.mobject.set_color(WHITE)
+        elif alpha < 0.5: 
+            self.mobject.set_color(BLUE)
+        elif alpha < 0.7: 
+            self.mobject.set_color(RED)
+        elif alpha < 0.9: 
+            self.mobject.set_color(GREEN)
+        else:
+            self.mobject.set_color(BLACK)
+
+
+
+
 class AnIntroToAlgs(Scene):
     def construct(self):
-        pass
+        array = TestingABC(color='#FFFFFF', height=1, width=5, grid_xstep=1)
+        self.play(MyAnimation(array))
+        self.wait()
 
-# class GraphSTuff(Scene):
-#     def construct(self):
-# 	x = Axes(
-#             x_range=[-2, 6], y_range=[-1, 5], axis_config={"include_tip": False}
-#         )
-#         plane = NumberPlane(
-#             x_range = (-2, 6),
-#             y_range = (-1, 5),
-#             axis_config={"include_numbers": False, 
-#             "color": RED,
-#             },
-#         )
-#         plane.center()
-    
-#         self.add(plane)
+class TimeGraph(Scene):
+    def construct(self):
+        x_top = 10
+        y_top = 10**4
 
-#         def funcf(x):
-#             return x**2 - 3*x + 2
-#         graphf = ax.get_graph(funcf, color=BLUE)
+        ax = Axes(
+            x_range=[0, x_top, x_top/10],
+            y_range=[0, y_top, y_top/10],
+            # x_axis_config={"numbers_to_include": np.arange(0, x_top+1, x_top/10), "include_ticks": False},
+            # y_axis_config={"unit_size": 10**3}, 
+            # y_length = round(config.frame_height / 2),
+            # x_length = round(config.frame_width / 2),
+            # tips=False,
+        )
 
-#         def funcg(x):
-#             return x**2 - 3
-#         graphg = ax.get_graph(funcg, color=RED)
+        labels = ax.get_axis_labels("People", "Seconds")
 
-#         anno = [MathTex("f(t)"), MathTex("g(t)")]
+        curve = ax.get_graph(lambda x: 100 * x**2, x_range=[0,9], color=BLUE_C)
 
-#         x_values = [3, 2]
-#         y_values = [2, 1]
-#         z_values = [0, 1]
-#         s_values = [2*RIGHT, 1.5*DOWN]
-#         g_values = [graphf, graphg]
+        # line_1 = ax.get_vertical_line(ax.input_to_graph_point(2, curve_1), color=YELLOW)
+        # area_1 = ax.get_area(curve_1, x_range=[0.3, 0.6], dx_scaling=40, color=BLUE)
+            
+        # ax.x_axis.add_numbers([10, 10, 10, 10, 10, 10, 10, 10, 10, 10])
+        
+        group = VGroup(ax, labels, curve)
+        group.scale(0.5)
+        
+        
 
-#         dots = VGroup()
-#         for x, y, z, s, g in zip(x_values, y_values, z_values, s_values, g_values):
-#           self.play(Write(g))
-#           dot = Dot(plane.coords_to_point(x, y))
-#           self.play(Write(dot))
-#           self.play(Write(anno[z].shift(s)))
-#           dots.add(dot)
-#           self.wait()
+        self.play(Create(ax))
+        self.play(Create(labels))
+        self.play(Create(curve))
+        # self.play(Create(group, run_time=2))
+        self.wait()
+
+def ParallelCreateLine(line=None, lag_ratio = 1.0, run_time = 1.0, **kwargs):
+    run_time = run_time * 2
+    copy = Line(line.get_start(), line.get_end())
+    g = VGroup(line, copy)
+    return Create(g, lag_ratio, run_time = run_time)
 
 class ConnectPeople(Scene):
     def construct(self):
-        stickman = ImageMobject("./stick_1.png").set_color(WHITE)
-        self.play(FadeIn(stickman))
+        names = ["Alice", "Bob", "Charlie", "Dave", "Eve", "Faythe"] 
+        people = []
+        distance = 3
+        for i in range(6): 
+            col = i % 3
+            row = -(i // 3)
+            person = Tex(names[i]).move_to([distance * col, distance * row, 0 ])
+            people.append(person)
+
+        group = VGroup(*people)
+        group.center()
+
+        lines = []
+        lines.append(Line(people[2].get_edge_center(DOWN), people[5].get_edge_center(UP)).scale(0.6))
+        # lines.append(Line(people[5].get_edge_center(UP), people[2].get_edge_center(DOWN)).scale(0.6))
+        lines.append(Line(people[0].get_edge_center(RIGHT), people[1].get_edge_center(LEFT)).scale(0.6))
+        # lines.append(Line(people[1].get_edge_center(LEFT), people[0].get_edge_center(RIGHT)).scale(0.6))
+        lines.append(Line(people[0].get_edge_center(DR), people[4].get_edge_center(UL)).scale(0.6))
+        # lines.append(Line(people[4].get_edge_center(UL), people[0].get_edge_center(DR)).scale(0.6))
+
+
+
+        self.play(*map(FadeIn, people))
+        self.play(*map(ParallelCreateLine, lines))
+
+        # stickmen = []
+        # for i in range(6):
+        #     col = i % 3
+        #     row = i // 3
+        #     man = ImageMobject("./stick_1.png").set_color(WHITE).move_to([2 * col, 2 * row, 0 ])
+        #     stickmen.append(man)
+
+        # line = Line(stickmen[2].get_edge_center(UP), stickmen[5].get_edge_center(DOWN))
+        # line = Line(stickmen[0].get_edge_center(RIGHT), stickmen[1].get_edge_center(LEFT))
+        # line = Line(stickmen[0].get_edge_center(UR), stickmen[4].get_edge_center(DL))
+        
+        # self.play(*map(FadeIn, stickmen))
+        # self.play(Create(line))
 
 class TimeCalculation(Scene):
     def construct(self):
